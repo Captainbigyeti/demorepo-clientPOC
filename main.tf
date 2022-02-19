@@ -15,7 +15,8 @@ provider "azurerm" {
   #this will be used to authenticate to to the Azure Tenant
   #where these resources will be deployed
   #subscription_id = "[Subscription_ID]"
-  #  subscription_id =
+   subscription_id = "41eefdf0-65d7-463f-a7ba-035d9f2d36d8"
+
 }
 
 #resource group where all the created resources will reside, contains all the metadata of resources for ease of management
@@ -60,28 +61,28 @@ resource "azurerm_virtual_network" "example" {
   }
 }
 
-resource "azurerm_subnet" "subnet0" {
+resource "azurerm_subnet" "subnetzero" {
   name                 = "example-subnet"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.0.0.0/24"]
 }
 
-  resource "azurerm_subnet" "subnet1" {
+  resource "azurerm_subnet" "subnetone" {
   name                 = "example-subnet"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-  resource "azurerm_subnet" "subnet2" {
+  resource "azurerm_subnet" "subnettwo" {
   name                 = "example-subnet"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-  resource "azurerm_subnet" "subnet3" {
+  resource "azurerm_subnet" "subnetthree" {
   name                 = "example-subnet"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
@@ -146,7 +147,7 @@ resource "azurerm_lb_probe" "lb_probe" {
   protocol            = "tcp"
   port                = 80
   interval_in_seconds = 5
-  number_of_probes    = 1
+  number_of_probes    = 2
 }
 
 
@@ -164,7 +165,7 @@ resource "azurerm_network_security_rule" "ALB_subnet0_inbound" {
   destination_address_prefix = "10.0.2.0/24"
 }
 
-resource "azurerm_network_security_rule" "vnet_subnet0_sshinbound" {
+resource "azurerm_network_security_rule" "vnet_subnetzero_sshinbound" {
   name                       = "vnet-subnet0-allow"
   resource_group_name = azurerm_resource_group.example.name
   network_security_group_name = azurerm_network_security_group.example.name
@@ -179,7 +180,7 @@ resource "azurerm_network_security_rule" "vnet_subnet0_sshinbound" {
 }
 
 
-resource "azurerm_network_interface" "subnet0_nic0" {
+resource "azurerm_network_interface" "subnetzero_niczero" {
   name                = "${var.prefix}-nic"
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
@@ -187,12 +188,12 @@ resource "azurerm_network_interface" "subnet0_nic0" {
 
   ip_configuration {
     name                          = "testconfiguration0"
-    subnet_id                     = azurerm_subnet.subnet0.id
+    subnet_id                     = azurerm_subnet.subnetzero.id
     private_ip_address_allocation = "Dynamic"
   }
 }
 
-resource "azurerm_network_interface" "subnet0_nic1" {
+resource "azurerm_network_interface" "subnetzero_nicone" {
   name                = "${var.prefix}-nic"
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
@@ -200,7 +201,7 @@ resource "azurerm_network_interface" "subnet0_nic1" {
 
   ip_configuration {
     name                          = "testconfiguration1"
-    subnet_id                     = azurerm_subnet.subnet0.id
+    subnet_id                     = azurerm_subnet.subnetzero.id
     private_ip_address_allocation = "Dynamic"
   }
 }
@@ -211,7 +212,7 @@ resource "azurerm_virtual_machine" "sub0vm" {
   name                  = "${var.prefix}-vm"
   location              = azurerm_resource_group.example.location
   resource_group_name   = azurerm_resource_group.example.name
-  network_interface_ids = [azurerm_network_interface.subnet0_nic0.id, azurerm_network_interface.subnet0_nic1.id]
+  network_interface_ids = [azurerm_network_interface.subnetzero_niczero.id, azurerm_network_interface.subnetzero_nicone.id]
   availability_set_id   = azurerm_availability_set.example.id
   vm_size               = "Standard_DS1_v2"
 
@@ -229,10 +230,20 @@ resource "azurerm_virtual_machine" "sub0vm" {
       managed_disk_type = "Standard_LRS"
     }
 
+    os_profile {
+    computer_name  = "hostname"
+    admin_username = "testexample"
+    admin_password = "Password1234!"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+
     count = 2
 
     depends_on = [
-       azurerm_network_interface.subnet0_nic0
+       azurerm_network_interface.subnetzero_niczero
      ]
 
     tags = {
@@ -241,21 +252,21 @@ resource "azurerm_virtual_machine" "sub0vm" {
 
 }
 
-resource "azurerm_network_interface" "subnet2_nic" {
+resource "azurerm_network_interface" "subnettwo_nic" {
   name                = "${var.prefix}-nic"
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
 
   ip_configuration {
     name                          = "testconfiguration2"
-    subnet_id                     = azurerm_subnet.subnet2.id
+    subnet_id                     = azurerm_subnet.subnettwo.id
     private_ip_address_allocation = "Dynamic"
   }
 }
 
 resource "azurerm_network_interface_nat_rule_association" "natrule" {
-  network_interface_id  = azurerm_network_interface.subnet2_nic.id
-  ip_configuration_name = "ipconfig2"
+  network_interface_id  = azurerm_network_interface.subnettwo_nic.id
+  ip_configuration_name = "testconfiguration2"
   nat_rule_id           = azurerm_lb_nat_rule.tcp.id
 }
 
@@ -264,14 +275,24 @@ resource "azurerm_virtual_machine" "sub2vm" {
   name                  = "subnet2-vm"
   location              = azurerm_resource_group.example.location
   resource_group_name   = azurerm_resource_group.example.name
-  network_interface_ids = [azurerm_network_interface.subnet2_nic.id]
+  network_interface_ids = [azurerm_network_interface.subnettwo_nic.id]
   vm_size               = "Standard_DS1_v2"
 
   storage_os_disk {
-    name              = "myosdisk1"
+    name              = "myosdisk3"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
+  }
+
+  os_profile {
+  computer_name  = "hostname2"
+  admin_username = "testexample2"
+  admin_password = "Password1234!"
+}
+
+os_profile_linux_config {
+    disable_password_authentication = false
   }
 
   provisioner "remote-exec" {
@@ -295,8 +316,8 @@ resource "azurerm_storage_account" "example" {
   account_replication_type = "LRS"
 
   network_rules {
-    default_action             = "allow"
-    virtual_network_subnet_ids = [azurerm_subnet.subnet0.id, azurerm_subnet.subnet1.id, azurerm_subnet.subnet2.id, azurerm_subnet.subnet3.id]
+    default_action             = "Allow"
+    virtual_network_subnet_ids = [azurerm_subnet.subnetzero.id, azurerm_subnet.subnetone.id, azurerm_subnet.subnettwo.id, azurerm_subnet.subnetthree.id]
   }
 
 
